@@ -1,0 +1,24 @@
+[
+  {
+    "id": "chunk-001",
+    "video_asset_id": "video-data-privacy-essentials",
+    "start_sec": 0,
+    "end_sec": 30,
+    "text": "TODO: add transcript chunk text for the first segment."
+  },
+  {
+    "id": "chunk-002",
+    "video_asset_id": "video-data-privacy-essentials",
+    "start_sec": 30,
+    "end_sec": 60,
+    "text": "TODO: add transcript chunk text for the second segment."
+  },
+  {
+    "id": "chunk-003",
+    "video_asset_id": "video-data-privacy-essentials",
+    "start_sec": 60,
+    "end_sec": 90,
+    "text": "TODO: add transcript chunk text for the third segment."
+  }
+]
+

@@ -1,0 +1,23 @@
+{
+  "organization_id": "org-demo",
+  "course": {
+    "id": "course-data-privacy-essentials",
+    "title": "Data Privacy Essentials",
+    "description": "Reference course metadata scaffold for Attune Compliance.",
+    "policy_slug": "default-demo-policy"
+  },
+  "video_asset": {
+    "id": "video-data-privacy-essentials",
+    "title": "Data Privacy Essentials",
+    "storage_key": "videos/data-privacy-essentials.mp4",
+    "duration_sec": 420,
+    "status": "ready"
+  },
+  "assignment": {
+    "id": "assignment-demo-learner",
+    "course_id": "course-data-privacy-essentials",
+    "user_id": "user-learner",
+    "status": "assigned"
+  }
+}
+

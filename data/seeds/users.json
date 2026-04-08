@@ -1,0 +1,24 @@
+[
+  {
+    "id": "user-org-admin",
+    "org_id": "org-demo",
+    "email": "org-admin@example.com",
+    "name": "Org Admin",
+    "role": "org_admin"
+  },
+  {
+    "id": "user-compliance-admin",
+    "org_id": "org-demo",
+    "email": "compliance-admin@example.com",
+    "name": "Compliance Admin",
+    "role": "compliance_admin"
+  },
+  {
+    "id": "user-learner",
+    "org_id": "org-demo",
+    "email": "learner@example.com",
+    "name": "Learner",
+    "role": "learner"
+  }
+]
+
