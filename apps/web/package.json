@@ -13,6 +13,7 @@
     "@onlook/prompts": "workspace:*",
     "@onlook/shared-types": "workspace:*",
     "@onlook/ui": "workspace:*",
+    "@radix-ui/react-slot": "^1.2.4",
     "clsx": "^2.1.1",
     "firebase": "^12.12.0",
     "lucide-react": "^0.468.0",
