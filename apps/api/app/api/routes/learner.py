@@ -1,5 +1,15 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy import select
+from sqlalchemy.orm import Session, joinedload
 
+from app.api.deps import get_db, get_current_user
+from app.models import Assignment, Course, CourseVideo, VideoAsset, User
+from app.schemas.assignment import (
+    AssignmentsListResponse,
+    AssignmentResponse,
+    CourseDetail,
+    VideoDetail,
+)
 from app.schemas.common import ScaffoldResponse
 from app.schemas.session import (
     AttentionEventCreate,
@@ -10,12 +20,70 @@ from app.schemas.session import (
 router = APIRouter(tags=["learner"])
 
 
-@router.get("/assignments", response_model=ScaffoldResponse)
-async def list_assignments() -> ScaffoldResponse:
-    return ScaffoldResponse(
-        area="learner.assignments.list",
-        next_step="Implement learner assignment query and dashboard summaries.",
+@router.get("/assignments", response_model=AssignmentsListResponse)
+async def list_assignments(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> AssignmentsListResponse:
+    # Query all assignments for the current user
+    assignments = (
+        db.query(Assignment)
+        .filter(Assignment.user_id == current_user.id)
+        .all()
     )
+
+    assignments_response = []
+    for assignment in assignments:
+        # Get the course
+        course = db.query(Course).filter(Course.id == assignment.course_id).first()
+        if not course:
+            continue
+
+        # Get all videos for this course
+        course_videos = (
+            db.query(CourseVideo)
+            .filter(CourseVideo.course_id == course.id)
+            .order_by(CourseVideo.sort_order)
+            .all()
+        )
+
+        videos = []
+        for cv in course_videos:
+            video_asset = (
+                db.query(VideoAsset)
+                .filter(VideoAsset.id == cv.video_asset_id)
+                .first()
+            )
+            if video_asset:
+                videos.append(
+                    VideoDetail(
+                        id=video_asset.id,
+                        title=video_asset.title,
+                        description=video_asset.description,
+                        duration_sec=video_asset.duration_sec,
+                        storage_url=video_asset.storage_url,
+                    )
+                )
+
+        course_detail = CourseDetail(
+            id=course.id,
+            title=course.title,
+            description=course.description,
+            videos=videos,
+        )
+
+        assignments_response.append(
+            AssignmentResponse(
+                id=assignment.id,
+                course=course_detail,
+                status=assignment.status,
+                due_at=assignment.due_at,
+                assigned_at=assignment.assigned_at,
+                completed_at=assignment.completed_at,
+            )
+        )
+
+    return AssignmentsListResponse(assignments=assignments_response)
 
 
 @router.post("/sessions/start", response_model=ScaffoldResponse)

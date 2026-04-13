@@ -1,0 +1,108 @@
+[    1312ms] [ERROR] Failed to load resource: the server responded with a status of 500 (Internal Server Error) @ http://localhost:3001/login:0
+[    1445ms] [INFO] %cDownload the React DevTools for a better development experience: https://reactjs.org/link/react-devtools font-weight:bold @ webpack-internal:///../../node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom/cjs/react-dom.development.js:29889
+[    1469ms] Error: Module not found: Can't resolve '@/components/ui/button'
+   6 | import { auth } from "@/lib/firebase";
+   7 | import { AppShell } from "@onlook/ui";
+>  8 | import { Button } from "@/components/ui/button";
+     | ^
+   9 | import { Input } from "@/components/ui/input";
+  10 |
+  11 | export default function LoginPage() {
+
+https://nextjs.org/docs/messages/module-not-found
+
+    at <unknown> (https://nextjs.org/docs/messages/module-not-found)
+    at getNotFoundError (file:///Users/rahul/Documents/Projects/OnlookAI/node_modules/.pnpm/next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/parseNotFoundError.js:124:16)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async getModuleBuildError (file:///Users/rahul/Documents/Projects/OnlookAI/node_modules/.pnpm/next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/webpackModuleError.js:104:27)
+    at async (file:///Users/rahul/Documents/Projects/OnlookAI/node_modules/.pnpm/next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/index.js:29:49)
+    at async (file:///Users/rahul/Documents/Projects/OnlookAI/node_modules/.pnpm/next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/webpack/plugins/wellknown-errors-plugin/index.js:27:21)
+[    1463ms] [LOG] [HMR] connected @ webpack-internal:///../../node_modules/.pnpm/next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/websocket.js:38
+[    1465ms] [ERROR] ./app/(auth)/login/page.tsx:8:1
+Module not found: Can't resolve '@/components/ui/button'
+   6 | import { auth } from "@/lib/firebase";
+   7 | import { AppShell } from "@onlook/ui";
+>  8 | import { Button } from "@/components/ui/button";
+     | ^
+   9 | import { Input } from "@/components/ui/input";
+  10 |
+  11 | export default function LoginPage() {
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///../../node_modules/.pnpm/next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[    1465ms] [ERROR] ./app/(auth)/login/page.tsx:9:1
+Module not found: Can't resolve '@/components/ui/input'
+   7 | import { AppShell } from "@onlook/ui";
+   8 | import { Button } from "@/components/ui/button";
+>  9 | import { Input } from "@/components/ui/input";
+     | ^
+  10 |
+  11 | export default function LoginPage() {
+  12 |   const router = useRouter();
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///../../node_modules/.pnpm/next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[    1474ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3001/favicon.ico:0
+[   45855ms] [ERROR] ./app/(auth)/login/page.tsx:8:1
+Module not found: Can't resolve '@/components/ui/button'
+   6 | import { auth } from "@/lib/firebase";
+   7 | import { AppShell } from "@onlook/ui";
+>  8 | import { Button } from "@/components/ui/button";
+     | ^
+   9 | import { Input } from "@/components/ui/input";
+  10 |
+  11 | export default function LoginPage() {
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///../../node_modules/.pnpm/next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[   45855ms] [ERROR] ./app/(auth)/login/page.tsx:9:1
+Module not found: Can't resolve '@/components/ui/input'
+   7 | import { AppShell } from "@onlook/ui";
+   8 | import { Button } from "@/components/ui/button";
+>  9 | import { Input } from "@/components/ui/input";
+     | ^
+  10 |
+  11 | export default function LoginPage() {
+  12 |   const router = useRouter();
+
+https://nextjs.org/docs/messages/module-not-found @ webpack-internal:///../../node_modules/.pnpm/next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[   45856ms] [LOG] [Fast Refresh] rebuilding @ webpack-internal:///../../node_modules/.pnpm/next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/pages/hot-reloader-client.js:221
+[   46014ms] [ERROR] ./src/components/ui/button.tsx:3:1
+Module not found: Can't resolve 'class-variance-authority'
+  1 | import * as React from "react"
+  2 | import { Slot } from "@radix-ui/react-slot"
+> 3 | import { cva, type VariantProps } from "class-variance-authority"
+    | ^
+  4 |
+  5 | import { cn } from "@/src/lib/utils"
+  6 |
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./app/(auth)/login/page.tsx @ webpack-internal:///../../node_modules/.pnpm/next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[   46014ms] [ERROR] ./src/components/ui/button.tsx:5:1
+Module not found: Can't resolve '@/src/lib/utils'
+  3 | import { cva, type VariantProps } from "class-variance-authority"
+  4 |
+> 5 | import { cn } from "@/src/lib/utils"
+    | ^
+  6 |
+  7 | const buttonVariants = cva(
+  8 |   "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./app/(auth)/login/page.tsx @ webpack-internal:///../../node_modules/.pnpm/next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62
+[   46014ms] [ERROR] ./src/components/ui/input.tsx:3:1
+Module not found: Can't resolve '@/src/lib/utils'
+  1 | import * as React from "react"
+  2 |
+> 3 | import { cn } from "@/src/lib/utils"
+    | ^
+  4 |
+  5 | const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
+  6 |   ({ className, type, ...props }, ref) => {
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./app/(auth)/login/page.tsx @ webpack-internal:///../../node_modules/.pnpm/next@14.2.35_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/client/components/react-dev-overlay/internal/helpers/hydration-error-info.js:62

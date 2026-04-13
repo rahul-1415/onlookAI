@@ -1,0 +1,29 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - paragraph [ref=e5]: OnlookAI Platform
+        - heading "Login" [level=1] [ref=e6]
+        - paragraph
+      - generic [ref=e7]:
+        - generic [ref=e8]:
+          - heading "Sign In" [level=1] [ref=e9]
+          - paragraph [ref=e10]: Use the test credentials below to login
+        - generic [ref=e11]:
+          - paragraph [ref=e12]:
+            - strong [ref=e13]: "Learner:"
+            - text: learner@demo.org / password
+          - paragraph [ref=e14]:
+            - strong [ref=e15]: "Admin:"
+            - text: admin@demo.org / password
+        - generic [ref=e16]:
+          - generic [ref=e17]:
+            - generic [ref=e18]: Email
+            - textbox "Email" [ref=e19]:
+              - /placeholder: learner@demo.org
+          - generic [ref=e20]:
+            - generic [ref=e21]: Password
+            - textbox "Password" [ref=e22]:
+              - /placeholder: Enter password
+          - button "Sign In" [ref=e23] [cursor=pointer]
+  - alert [ref=e24]

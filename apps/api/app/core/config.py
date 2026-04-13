@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(default="replace-me", alias="JWT_SECRET")
     local_storage_root: str = Field(default="../../.storage", alias="LOCAL_STORAGE_ROOT")
     web_cors_origins: list[str] = Field(
-        default_factory=lambda: ["http://localhost:3000"], alias="WEB_CORS_ORIGINS"
+        default_factory=lambda: ["http://localhost:3000", "http://localhost:3001"], alias="WEB_CORS_ORIGINS"
     )
 
 

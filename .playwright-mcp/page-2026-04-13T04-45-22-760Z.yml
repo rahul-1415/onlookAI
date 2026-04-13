@@ -1,0 +1,51 @@
+- generic [active]:
+  - alert [ref=e1]
+  - dialog [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - heading "Build Error" [level=1] [ref=e7]
+        - paragraph [ref=e8]: Failed to compile
+        - generic [ref=e9]:
+          - text: Next.js (14.2.35) is outdated
+          - link "(learn more)" [ref=e11] [cursor=pointer]:
+            - /url: https://nextjs.org/docs/messages/version-staleness
+      - generic [ref=e12]:
+        - generic [ref=e13]:
+          - link "./src/components/ui/button.tsx:3:1" [ref=e14] [cursor=pointer]:
+            - text: ./src/components/ui/button.tsx:3:1
+            - img [ref=e15]
+          - generic [ref=e19]:
+            - generic [ref=e20]: "Module not found: Can't resolve 'class-variance-authority'"
+            - generic [ref=e21]: 1 |
+            - text: import * as React from "react"
+            - generic [ref=e22]: 2 |
+            - text: import
+            - generic [ref=e23]: "{"
+            - text: Slot
+            - generic [ref=e24]: "}"
+            - text: from "@radix-ui/react-slot" >
+            - generic [ref=e25]: 3 |
+            - text: import
+            - generic [ref=e26]: "{ cva"
+            - text: ","
+            - generic [ref=e27]: type
+            - text: VariantProps
+            - generic [ref=e28]: "}"
+            - text: from "class-variance-authority"
+            - generic [ref=e29]: "|"
+            - text: ^
+            - generic [ref=e30]: 4 |
+            - generic [ref=e31]: 5 |
+            - text: import
+            - generic [ref=e32]: "{ cn }"
+            - text: from "@/src/lib/utils"
+            - generic [ref=e33]: 6 |
+            - generic [ref=e34]:
+              - link "https://nextjs.org/docs/messages/module-not-found" [ref=e35] [cursor=pointer]:
+                - /url: https://nextjs.org/docs/messages/module-not-found
+              - text: "Import trace for requested module:"
+            - link "./app/(auth)/login/page.tsx" [ref=e36] [cursor=pointer]:
+              - text: ./app/(auth)/login/page.tsx
+              - img [ref=e37]
+        - contentinfo [ref=e41]:
+          - paragraph [ref=e42]: This error occurred during the build process and can only be dismissed by fixing the error.
