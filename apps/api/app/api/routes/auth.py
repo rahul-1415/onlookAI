@@ -1,27 +1,42 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 
-from app.schemas.auth import CurrentUser, LoginRequest
+from app.api.deps import get_db, get_current_user
+from app.core.security import verify_password, create_access_token
+from app.models import User
+from app.schemas.auth import CurrentUser, LoginRequest, LoginResponse
 from app.schemas.common import ScaffoldResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/login", response_model=ScaffoldResponse)
-async def login(payload: LoginRequest) -> ScaffoldResponse:
-    return ScaffoldResponse(
-        area="auth.login",
-        next_step=f"Implement email/password auth for {payload.email}.",
-    )
+@router.post("/login", response_model=LoginResponse)
+async def login(payload: LoginRequest, db: Session = Depends(get_db)) -> LoginResponse:
+    if not payload.email or not payload.password:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email and password are required"
+        )
+
+    user = db.query(User).filter(User.email == payload.email).first()
+    if not user or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
+
+    access_token = create_access_token(user.id)
+    return LoginResponse(access_token=access_token, role=user.role)
 
 
 @router.get("/me", response_model=CurrentUser)
-async def get_me() -> CurrentUser:
+async def get_me(current_user: User = Depends(get_current_user)) -> CurrentUser:
     return CurrentUser(
-        id="placeholder-user",
-        org_id="placeholder-org",
-        email="placeholder@example.com",
-        name="Placeholder User",
-        role="org_admin",
+        id=current_user.id,
+        org_id=current_user.org_id,
+        email=current_user.email,
+        name=current_user.name,
+        role=current_user.role,
     )
 
 

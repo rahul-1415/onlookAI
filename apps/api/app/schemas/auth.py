@@ -4,8 +4,14 @@ from app.utils.enums import UserRole
 
 
 class LoginRequest(BaseModel):
-    email: str
-    password: str
+    email: str | None = None
+    password: str | None = None
+    firebase_id_token: str | None = None
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    role: UserRole
 
 
 class CurrentUser(BaseModel):

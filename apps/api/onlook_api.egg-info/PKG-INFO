@@ -1,0 +1,25 @@
+Metadata-Version: 2.4
+Name: onlook-api
+Version: 0.0.0
+Summary: FastAPI backend scaffold for OnlookAI and Attune Compliance
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: alembic<2.0,>=1.14
+Requires-Dist: fastapi<1.0,>=0.115
+Requires-Dist: passlib[bcrypt]<2.0,>=1.7
+Requires-Dist: psycopg[binary]<4.0,>=3.2
+Requires-Dist: pydantic-settings<3.0,>=2.7
+Requires-Dist: python-jose[cryptography]<4.0,>=3.3
+Requires-Dist: python-multipart<1.0,>=0.0.20
+Requires-Dist: redis<6.0,>=5.2
+Requires-Dist: sqlalchemy<3.0,>=2.0
+Requires-Dist: uvicorn[standard]<1.0,>=0.32
+Provides-Extra: dev
+Requires-Dist: mypy<2.0,>=1.14; extra == "dev"
+Requires-Dist: pytest<9.0,>=8.3; extra == "dev"
+Requires-Dist: ruff<1.0,>=0.8; extra == "dev"
+
+# Onlook API
+
+This package contains the FastAPI scaffold only. Route handlers, service classes, persistence models, and agent boundaries are present, but implementation logic is intentionally deferred.
+
