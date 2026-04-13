@@ -44,6 +44,7 @@ class AttentionEventType(StrEnum):
     PLAYBACK_RESUMED = "playback_resumed"
     WARNING = "warning"
     NO_FACE = "no_face"
+    FACE_DETECTED = "face_detected"
 
 
 class InterventionStatus(StrEnum):

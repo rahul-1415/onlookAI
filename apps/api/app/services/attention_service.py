@@ -36,25 +36,29 @@ class AttentionMonitoringService:
 
         score = 100.0
 
-        # Negative events
-        negative_events = {
-            AttentionEventType.TAB_HIDDEN,
-            AttentionEventType.WINDOW_BLUR,
-            AttentionEventType.IDLE,
+        # Weighted scoring per event type
+        negative_weights = {
+            AttentionEventType.TAB_HIDDEN: 20,
+            AttentionEventType.WINDOW_BLUR: 20,
+            AttentionEventType.IDLE: 20,
+            AttentionEventType.NO_FACE: 25,  # Higher penalty — physically absent
         }
 
-        # Positive events
-        positive_events = {
-            AttentionEventType.TAB_VISIBLE,
-            AttentionEventType.WINDOW_FOCUS,
-            AttentionEventType.ACTIVITY_RESUMED,
+        positive_weights = {
+            AttentionEventType.TAB_VISIBLE: 10,
+            AttentionEventType.WINDOW_FOCUS: 10,
+            AttentionEventType.ACTIVITY_RESUMED: 10,
+            AttentionEventType.FACE_DETECTED: 10,
         }
 
         for event in events:
-            if event.event_type in negative_events:
-                score -= 20
-            elif event.event_type in positive_events:
-                score += 10
+            penalty = negative_weights.get(event.event_type)
+            if penalty is not None:
+                score -= penalty
+            else:
+                bonus = positive_weights.get(event.event_type)
+                if bonus is not None:
+                    score += bonus
 
         # Clamp to [0, 100]
         score = max(0.0, min(100.0, score))

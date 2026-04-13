@@ -18,6 +18,8 @@ class Settings(BaseSettings):
         default="https://api.openai.com/v1", alias="OPENAI_BASE_URL"
     )
     openai_api_key: str = Field(default="replace-me", alias="OPENAI_API_KEY")
+    whisper_model_size: str = Field(default="base", alias="WHISPER_MODEL_SIZE")
+    whisper_device: str = Field(default="cpu", alias="WHISPER_DEVICE")
     jwt_secret: str = Field(default="replace-me", alias="JWT_SECRET")
     local_storage_root: str = Field(default="../../.storage", alias="LOCAL_STORAGE_ROOT")
     web_cors_origins: list[str] = Field(
