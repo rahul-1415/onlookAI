@@ -19,7 +19,10 @@ from app.schemas.session import (
     InterventionAnswerCreate,
     SessionResponse,
     StartSessionRequest,
+    AttentionEventResponse,
+    AnswerEvaluationResponse,
 )
+from app.services.session_orchestrator import SessionOrchestratorService
 from app.utils.enums import SessionStatus
 
 router = APIRouter(tags=["learner"])
@@ -146,6 +149,55 @@ async def start_session(
     )
 
 
+@router.get("/sessions/{session_id}")
+async def get_session(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Fetch session details with video information for the frontend."""
+    session = (
+        db.query(TrainingSession)
+        .filter(
+            TrainingSession.id == session_id,
+            TrainingSession.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found",
+        )
+
+    # Fetch video details
+    video = (
+        db.query(VideoAsset)
+        .filter(VideoAsset.id == session.video_asset_id)
+        .first()
+    )
+
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Video not found",
+        )
+
+    return {
+        "session": SessionResponse(
+            id=session.id,
+            assignment_id=session.assignment_id,
+            video_asset_id=session.video_asset_id,
+            status=session.status,
+            started_at=session.started_at.isoformat() if session.started_at else None,
+            ended_at=session.ended_at.isoformat() if session.ended_at else None,
+        ),
+        "storage_url": video.storage_url,
+        "video_title": video.title,
+    }
+
+
 @router.post("/sessions/{session_id}/heartbeat", response_model=ScaffoldResponse)
 async def session_heartbeat(session_id: str) -> ScaffoldResponse:
     return ScaffoldResponse(
@@ -154,39 +206,59 @@ async def session_heartbeat(session_id: str) -> ScaffoldResponse:
     )
 
 
-@router.post("/sessions/{session_id}/attention-event", response_model=ScaffoldResponse)
+@router.post("/sessions/{session_id}/attention-event", response_model=AttentionEventResponse)
 async def post_attention_event(
-    session_id: str, payload: AttentionEventCreate
-) -> ScaffoldResponse:
-    return ScaffoldResponse(
-        area="learner.sessions.attention_event",
-        next_step=(
-            "Feed the session orchestrator with "
-            f"{payload.event_type} for session {session_id}."
-        ),
+    session_id: str,
+    payload: AttentionEventCreate,
+    db: Session = Depends(get_db),
+) -> AttentionEventResponse:
+    return await SessionOrchestratorService.ingest_attention_event(
+        session_id, payload, db
     )
 
 
 @router.post(
     "/sessions/{session_id}/intervention/{intervention_id}/answer",
-    response_model=ScaffoldResponse,
+    response_model=AnswerEvaluationResponse,
 )
 async def answer_intervention(
-    session_id: str, intervention_id: str, payload: InterventionAnswerCreate
-) -> ScaffoldResponse:
-    return ScaffoldResponse(
-        area="learner.sessions.intervention_answer",
-        next_step=(
-            "Evaluate learner answer for "
-            f"intervention {intervention_id} in session {session_id}: {payload.user_answer}"
-        ),
+    session_id: str,
+    intervention_id: str,
+    payload: InterventionAnswerCreate,
+    db: Session = Depends(get_db),
+) -> AnswerEvaluationResponse:
+    return await SessionOrchestratorService.answer_intervention(
+        session_id, intervention_id, payload, db
     )
 
 
-@router.post("/sessions/{session_id}/complete", response_model=ScaffoldResponse)
-async def complete_session(session_id: str) -> ScaffoldResponse:
-    return ScaffoldResponse(
-        area="learner.sessions.complete",
-        next_step=f"Finalize scores and evidence for session {session_id}.",
+@router.post("/sessions/{session_id}/complete", response_model=SessionResponse)
+async def complete_session(
+    session_id: str,
+    db: Session = Depends(get_db),
+) -> SessionResponse:
+    session = (
+        db.query(TrainingSession)
+        .filter(TrainingSession.id == session_id)
+        .first()
+    )
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found",
+        )
+
+    session.status = SessionStatus.COMPLETED
+    session.ended_at = datetime.utcnow()
+    db.commit()
+    db.refresh(session)
+
+    return SessionResponse(
+        id=session.id,
+        assignment_id=session.assignment_id,
+        video_asset_id=session.video_asset_id,
+        status=session.status,
+        started_at=session.started_at.isoformat() if session.started_at else None,
+        ended_at=session.ended_at.isoformat() if session.ended_at else None,
     )
 

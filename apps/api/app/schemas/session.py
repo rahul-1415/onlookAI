@@ -26,3 +26,22 @@ class AttentionEventCreate(BaseModel):
 
 class InterventionAnswerCreate(BaseModel):
     user_answer: str
+
+
+class InterventionDetail(BaseModel):
+    id: str
+    question_json: dict
+    status: str
+
+
+class AttentionEventResponse(BaseModel):
+    score: float
+    session_status: str
+    intervention: InterventionDetail | None = None
+
+
+class AnswerEvaluationResponse(BaseModel):
+    is_correct: bool
+    feedback: str
+    next_action: str
+    intervention_status: str

@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
+import { apiRoutes } from "@/lib/api/routes";
+import { useAttentionMonitor, type InterventionDetail } from "@/hooks/use-attention-monitor";
+import { InterventionModal } from "./intervention-modal";
 
 interface VideoPlayerShellProps {
   sessionId: string;
@@ -33,28 +36,33 @@ export function VideoPlayerShell({ sessionId }: VideoPlayerShellProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const [showInterventionModal, setShowInterventionModal] = useState(false);
+
+  const {
+    startMonitoring,
+    stopMonitoring,
+    activeIntervention,
+    clearIntervention,
+  } = useAttentionMonitor(sessionId);
 
   useEffect(() => {
     const fetchSessionData = async () => {
       try {
-        // In a real implementation, we would fetch the session data
-        // For now, we'll just show a message that we have the sessionId
-        setSession({
-          id: sessionId,
-          assignment_id: "",
-          video_asset_id: "",
-          status: "ready",
-          started_at: new Date().toISOString(),
-          ended_at: null,
-        });
+        const response = await apiFetch<{
+          session: SessionData;
+          storage_url: string;
+          video_title: string;
+        }>(apiRoutes.getSession(sessionId));
 
-        // Mock video data - in real implementation fetch from API
+        setSession(response.session);
+
+        // Fetch video asset details
         setVideo({
-          id: "video-demo",
-          title: "Data Privacy Essentials",
-          description: "Understanding data privacy best practices",
-          duration_sec: 420,
-          storage_url: "https://commondatastorage.googleapis.com/gtv-videos-library/sample/BigBuckBunny.mp4",
+          id: response.session.video_asset_id,
+          title: response.video_title,
+          description: "",
+          duration_sec: 0,
+          storage_url: response.storage_url,
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load session");
@@ -66,15 +74,38 @@ export function VideoPlayerShell({ sessionId }: VideoPlayerShellProps) {
     fetchSessionData();
   }, [sessionId]);
 
+  // When intervention appears, pause video and show modal
+  useEffect(() => {
+    if (activeIntervention) {
+      if (videoRef.current && isPlaying) {
+        videoRef.current.pause();
+        setIsPlaying(false);
+      }
+      setShowInterventionModal(true);
+    }
+  }, [activeIntervention, isPlaying]);
+
   const togglePlay = () => {
     if (videoRef.current) {
       if (isPlaying) {
         videoRef.current.pause();
+        stopMonitoring();
       } else {
         videoRef.current.play();
+        startMonitoring();
       }
       setIsPlaying(!isPlaying);
     }
+  };
+
+  const handlePlay = () => {
+    setIsPlaying(true);
+    startMonitoring();
+  };
+
+  const handlePause = () => {
+    setIsPlaying(false);
+    stopMonitoring();
   };
 
   const handleTimeUpdate = () => {
@@ -87,6 +118,22 @@ export function VideoPlayerShell({ sessionId }: VideoPlayerShellProps) {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
     }
+  };
+
+  const handleModalClose = (nextAction?: string) => {
+    setShowInterventionModal(false);
+    clearIntervention();
+
+    // Handle next action
+    if (nextAction === "resume" || nextAction === "replay_then_retry") {
+      // Resume video
+      if (videoRef.current && !isPlaying) {
+        videoRef.current.play();
+        setIsPlaying(true);
+        startMonitoring();
+      }
+    }
+    // "retry" means learner can try again - modal will reappear with same question
   };
 
   const formatTime = (seconds: number) => {
@@ -122,8 +169,8 @@ export function VideoPlayerShell({ sessionId }: VideoPlayerShellProps) {
           className="w-full h-full"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleLoadedMetadata}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
+          onPlay={handlePlay}
+          onPause={handlePause}
         />
       </div>
 
@@ -173,7 +220,15 @@ export function VideoPlayerShell({ sessionId }: VideoPlayerShellProps) {
           <span className="font-medium text-white">Duration:</span> {Math.floor(duration / 60)}m
         </div>
       </div>
+
+      {showInterventionModal && activeIntervention && (
+        <InterventionModal
+          open={showInterventionModal}
+          sessionId={sessionId}
+          intervention={activeIntervention}
+          onClose={handleModalClose}
+        />
+      )}
     </section>
   );
 }
-

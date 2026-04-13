@@ -4,6 +4,7 @@ export const apiRoutes = {
   logout: "/api/auth/logout",
   assignments: "/api/assignments",
   startSession: "/api/sessions/start",
+  getSession: (sessionId: string) => `/api/sessions/${sessionId}`,
   sessionHeartbeat: (sessionId: string) => `/api/sessions/${sessionId}/heartbeat`,
   sessionAttention: (sessionId: string) =>
     `/api/sessions/${sessionId}/attention-event`,
