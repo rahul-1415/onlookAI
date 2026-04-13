@@ -1,0 +1,31 @@
+- generic [active] [ref=e1]:
+  - main [ref=e2]:
+    - generic [ref=e3]:
+      - generic [ref=e4]:
+        - paragraph [ref=e5]: OnlookAI Platform
+        - heading "Attune Compliance" [level=1] [ref=e6]
+        - paragraph [ref=e7]: Learner surface for assignments, session playback, intervention handling, and completion history.
+      - navigation [ref=e8]:
+        - link "Dashboard" [ref=e9] [cursor=pointer]:
+          - /url: /app
+        - link "Assignments" [ref=e10] [cursor=pointer]:
+          - /url: /app/assignments
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - paragraph [ref=e13]: Learner Session
+          - heading "Session ae34ee44-3f66-4cff-9244-1e627097be8a" [level=2] [ref=e14]
+          - paragraph [ref=e15]: Reserved for synchronized video playback, attention collection, intervention modal flows, and transcript-aware recovery.
+        - generic [ref=e16]:
+          - generic [ref=e19]:
+            - heading "Data Privacy Essentials" [level=3] [ref=e20]
+            - paragraph [ref=e21]: Understanding data privacy best practices
+            - generic [ref=e22]:
+              - button "Play" [ref=e23] [cursor=pointer]
+              - slider [ref=e25]: "0"
+              - generic [ref=e26]: 0:00 / 0:00
+          - generic [ref=e27]:
+            - generic [ref=e28]: "Session ID: ae34ee44..."
+            - generic [ref=e29]: "Status: ready"
+            - generic [ref=e30]: "Duration: 0m"
+        - generic [ref=e31]: Placeholder session timeline. This will eventually show attention events, warnings, interruptions, answers, and resume points.
+  - alert [ref=e32]

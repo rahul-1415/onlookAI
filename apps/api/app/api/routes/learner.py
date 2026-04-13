@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends
+from datetime import datetime
+from uuid import uuid4
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_db, get_current_user
-from app.models import Assignment, Course, CourseVideo, VideoAsset, User
+from app.models import Assignment, Course, CourseVideo, TrainingSession, VideoAsset, User
 from app.schemas.assignment import (
     AssignmentsListResponse,
     AssignmentResponse,
@@ -14,8 +17,10 @@ from app.schemas.common import ScaffoldResponse
 from app.schemas.session import (
     AttentionEventCreate,
     InterventionAnswerCreate,
+    SessionResponse,
     StartSessionRequest,
 )
+from app.utils.enums import SessionStatus
 
 router = APIRouter(tags=["learner"])
 
@@ -86,14 +91,58 @@ async def list_assignments(
     return AssignmentsListResponse(assignments=assignments_response)
 
 
-@router.post("/sessions/start", response_model=ScaffoldResponse)
-async def start_session(payload: StartSessionRequest) -> ScaffoldResponse:
-    return ScaffoldResponse(
-        area="learner.sessions.start",
-        next_step=(
-            "Create session record and initial state for assignment "
-            f"{payload.assignment_id}."
-        ),
+@router.post("/sessions/start", response_model=SessionResponse)
+async def start_session(
+    payload: StartSessionRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> SessionResponse:
+    # Verify the assignment exists and belongs to the user
+    assignment = (
+        db.query(Assignment)
+        .filter(
+            Assignment.id == payload.assignment_id,
+            Assignment.user_id == current_user.id,
+        )
+        .first()
+    )
+
+    if not assignment:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Assignment not found",
+        )
+
+    # Verify the video asset exists
+    video = db.query(VideoAsset).filter(VideoAsset.id == payload.video_asset_id).first()
+    if not video:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Video asset not found",
+        )
+
+    # Create a new session
+    session_id = str(uuid4())
+    session = TrainingSession(
+        id=session_id,
+        assignment_id=payload.assignment_id,
+        user_id=current_user.id,
+        video_asset_id=payload.video_asset_id,
+        status=SessionStatus.READY,
+        started_at=datetime.utcnow(),
+    )
+
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+
+    return SessionResponse(
+        id=session.id,
+        assignment_id=session.assignment_id,
+        video_asset_id=session.video_asset_id,
+        status=session.status,
+        started_at=session.started_at.isoformat() if session.started_at else None,
+        ended_at=session.ended_at.isoformat() if session.ended_at else None,
     )
 
 

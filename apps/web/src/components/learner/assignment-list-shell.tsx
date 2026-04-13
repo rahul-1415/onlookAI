@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api/client";
 
 interface VideoDetail {
@@ -32,9 +33,11 @@ interface AssignmentsResponse {
 }
 
 export function AssignmentListShell() {
+  const router = useRouter();
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [startingSession, setStartingSession] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAssignments = async () => {
@@ -50,6 +53,32 @@ export function AssignmentListShell() {
 
     fetchAssignments();
   }, []);
+
+  const handleStartAssignment = async (assignment: Assignment) => {
+    setStartingSession(assignment.id);
+    try {
+      // Get the first video for this assignment
+      const firstVideo = assignment.course.videos[0];
+      if (!firstVideo) {
+        throw new Error("No videos found for this assignment");
+      }
+
+      // Create a new session
+      const response = await apiFetch<any>("/api/sessions/start", {
+        method: "POST",
+        body: JSON.stringify({
+          assignment_id: assignment.id,
+          video_asset_id: firstVideo.id,
+        }),
+      });
+
+      // Navigate to the session page
+      router.push(`/app/session/${response.id}`);
+    } catch (err) {
+      console.error("Failed to start assignment:", err);
+      setStartingSession(null);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -110,8 +139,12 @@ export function AssignmentListShell() {
               </div>
             )}
 
-            <button className="mt-3 w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md transition-colors">
-              Start Assignment
+            <button
+              onClick={() => handleStartAssignment(assignment)}
+              disabled={startingSession === assignment.id}
+              className="mt-3 w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-600/50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-md transition-colors"
+            >
+              {startingSession === assignment.id ? "Starting..." : "Start Assignment"}
             </button>
           </div>
         </div>
