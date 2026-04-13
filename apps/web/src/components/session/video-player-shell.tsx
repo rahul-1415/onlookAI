@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api/client";
 import { apiRoutes } from "@/lib/api/routes";
 import { useAttentionMonitor, type InterventionDetail } from "@/hooks/use-attention-monitor";
+import { useFaceDetection } from "@/hooks/use-face-detection";
 import { InterventionModal } from "./intervention-modal";
 
 interface VideoPlayerShellProps {
@@ -43,7 +44,15 @@ export function VideoPlayerShell({ sessionId }: VideoPlayerShellProps) {
     stopMonitoring,
     activeIntervention,
     clearIntervention,
+    reportFaceStatus,
   } = useAttentionMonitor(sessionId);
+
+  const {
+    faceStatus,
+    cameraError,
+    startDetection,
+    stopDetection,
+  } = useFaceDetection();
 
   useEffect(() => {
     const fetchSessionData = async () => {
@@ -74,6 +83,13 @@ export function VideoPlayerShell({ sessionId }: VideoPlayerShellProps) {
     fetchSessionData();
   }, [sessionId]);
 
+  // Bridge face detection status to attention events
+  useEffect(() => {
+    if (faceStatus === "detected" || faceStatus === "not_detected") {
+      reportFaceStatus(faceStatus);
+    }
+  }, [faceStatus, reportFaceStatus]);
+
   // When intervention appears, pause video and show modal
   useEffect(() => {
     if (activeIntervention) {
@@ -101,11 +117,13 @@ export function VideoPlayerShell({ sessionId }: VideoPlayerShellProps) {
   const handlePlay = () => {
     setIsPlaying(true);
     startMonitoring();
+    startDetection();
   };
 
   const handlePause = () => {
     setIsPlaying(false);
     stopMonitoring();
+    stopDetection();
   };
 
   const handleTimeUpdate = () => {
@@ -220,6 +238,12 @@ export function VideoPlayerShell({ sessionId }: VideoPlayerShellProps) {
           <span className="font-medium text-white">Duration:</span> {Math.floor(duration / 60)}m
         </div>
       </div>
+
+      {cameraError && (
+        <div className="text-xs text-amber-400 mt-1">
+          Camera unavailable — face detection disabled
+        </div>
+      )}
 
       {showInterventionModal && activeIntervention && (
         <InterventionModal

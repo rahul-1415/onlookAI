@@ -10,6 +10,7 @@
     "format": "prettier --check '**/*.{ts,tsx,css,json,mjs}'"
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "0.10.14",
     "@onlook/prompts": "workspace:*",
     "@onlook/shared-types": "workspace:*",
     "@onlook/ui": "workspace:*",

@@ -4,14 +4,18 @@ import { useState, useRef, useCallback } from "react";
 import { apiFetch } from "@/lib/api/client";
 import { apiRoutes } from "@/lib/api/routes";
 
+export type AttentionEventType =
+  | "TAB_HIDDEN"
+  | "TAB_VISIBLE"
+  | "WINDOW_BLUR"
+  | "WINDOW_FOCUS"
+  | "IDLE"
+  | "ACTIVITY_RESUMED"
+  | "NO_FACE"
+  | "FACE_DETECTED";
+
 export interface AttentionEventPayload {
-  event_type:
-    | "TAB_HIDDEN"
-    | "TAB_VISIBLE"
-    | "WINDOW_BLUR"
-    | "WINDOW_FOCUS"
-    | "IDLE"
-    | "ACTIVITY_RESUMED";
+  event_type: AttentionEventType;
   occurred_at: string;
   value?: number;
   metadata?: Record<string, unknown>;
@@ -40,13 +44,7 @@ export function useAttentionMonitor(sessionId: string) {
   // Post attention event to backend
   const postAttentionEvent = useCallback(
     async (
-      eventType:
-        | "TAB_HIDDEN"
-        | "TAB_VISIBLE"
-        | "WINDOW_BLUR"
-        | "WINDOW_FOCUS"
-        | "IDLE"
-        | "ACTIVITY_RESUMED",
+      eventType: AttentionEventType,
       metadata?: Record<string, unknown>
     ) => {
       try {
@@ -166,10 +164,20 @@ export function useAttentionMonitor(sessionId: string) {
     setActiveIntervention(null);
   }, []);
 
+  // Report face detection status from external hook
+  const reportFaceStatus = useCallback(
+    (status: "detected" | "not_detected") => {
+      if (!isMonitoringRef.current) return;
+      postAttentionEvent(status === "detected" ? "FACE_DETECTED" : "NO_FACE");
+    },
+    [postAttentionEvent]
+  );
+
   return {
     startMonitoring,
     stopMonitoring,
     activeIntervention,
     clearIntervention,
+    reportFaceStatus,
   };
 }
