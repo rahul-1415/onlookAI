@@ -1,5 +1,14 @@
 {
   "permissions": {
-    "allow": ["Bash"]
+    "allow": [
+      "Bash(npm:*)",
+      "Bash(pnpm:*)",
+      "Bash(git:*)",
+      "Bash(python:*)",
+      "Bash(uvicorn:*)",
+      "Bash(curl:*)",
+      "Bash(psql:*)",
+      "Bash(docker:*)"
+    ]
   }
 }
