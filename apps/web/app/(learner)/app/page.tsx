@@ -1,31 +1,15 @@
-import { MetricCard, PagePlaceholder } from "@onlook/ui";
+import { DashboardContent } from "../../../src/components/learner/dashboard-content";
 
 export default function LearnerDashboardPage() {
   return (
     <div className="space-y-6">
-      <PagePlaceholder
-        eyebrow="Learner"
-        title="Dashboard"
-        description="Reserved for assigned modules, in-progress sessions, certificates, and completion summaries."
-      />
-      <section className="grid gap-4 md:grid-cols-3">
-        <MetricCard
-          label="Assignments"
-          value="--"
-          detail="Will summarize required modules by due date and status."
-        />
-        <MetricCard
-          label="Attention"
-          value="--"
-          detail="Will surface average attention and recovery performance."
-        />
-        <MetricCard
-          label="Completion"
-          value="--"
-          detail="Will track completed vs in-progress training."
-        />
-      </section>
+      <div>
+        <h1 className="text-2xl font-semibold text-white">Dashboard</h1>
+        <p className="mt-1 text-sm text-slate-400">
+          Your training progress at a glance.
+        </p>
+      </div>
+      <DashboardContent />
     </div>
   );
 }
-

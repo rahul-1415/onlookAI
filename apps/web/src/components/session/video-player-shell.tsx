@@ -6,6 +6,8 @@ import { apiRoutes } from "@/lib/api/routes";
 import { useAttentionMonitor, type InterventionDetail } from "@/hooks/use-attention-monitor";
 import { useFaceDetection } from "@/hooks/use-face-detection";
 import { InterventionModal } from "./intervention-modal";
+import { SessionCompletion } from "./session-completion";
+import { SessionTimelineShell } from "./session-timeline-shell";
 
 interface VideoPlayerShellProps {
   sessionId: string;
@@ -20,24 +22,26 @@ interface SessionData {
   ended_at: string | null;
 }
 
-interface VideoAssetData {
-  id: string;
-  title: string;
-  description: string;
-  duration_sec: number;
-  storage_url: string;
+interface CompletionData {
+  final_score: number;
+  total_events: number;
+  interventions_triggered: number;
+  interventions_passed: number;
+  duration_seconds: number;
 }
 
 export function VideoPlayerShell({ sessionId }: VideoPlayerShellProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [session, setSession] = useState<SessionData | null>(null);
-  const [video, setVideo] = useState<VideoAssetData | null>(null);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [videoTitle, setVideoTitle] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showInterventionModal, setShowInterventionModal] = useState(false);
+  const [completion, setCompletion] = useState<CompletionData | null>(null);
 
   const {
     startMonitoring,
@@ -64,15 +68,19 @@ export function VideoPlayerShell({ sessionId }: VideoPlayerShellProps) {
         }>(apiRoutes.getSession(sessionId));
 
         setSession(response.session);
+        setVideoUrl(response.storage_url);
+        setVideoTitle(response.video_title);
 
-        // Fetch video asset details
-        setVideo({
-          id: response.session.video_asset_id,
-          title: response.video_title,
-          description: "",
-          duration_sec: 0,
-          storage_url: response.storage_url,
-        });
+        // If session is already completed, fetch completion data
+        if (response.session.status === "completed") {
+          setCompletion({
+            final_score: 0,
+            total_events: 0,
+            interventions_triggered: 0,
+            interventions_passed: 0,
+            duration_seconds: 0,
+          });
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load session");
       } finally {
@@ -138,20 +146,39 @@ export function VideoPlayerShell({ sessionId }: VideoPlayerShellProps) {
     }
   };
 
+  const handleVideoEnded = async () => {
+    setIsPlaying(false);
+    stopMonitoring();
+    stopDetection();
+
+    try {
+      const result = await apiFetch<{ session: SessionData } & CompletionData>(
+        apiRoutes.sessionComplete(sessionId),
+        { method: "POST" }
+      );
+      setCompletion({
+        final_score: result.final_score,
+        total_events: result.total_events,
+        interventions_triggered: result.interventions_triggered,
+        interventions_passed: result.interventions_passed,
+        duration_seconds: result.duration_seconds,
+      });
+    } catch (err) {
+      console.error("Failed to complete session:", err);
+    }
+  };
+
   const handleModalClose = (nextAction?: string) => {
     setShowInterventionModal(false);
     clearIntervention();
 
-    // Handle next action
     if (nextAction === "resume" || nextAction === "replay_then_retry") {
-      // Resume video
       if (videoRef.current && !isPlaying) {
         videoRef.current.play();
         setIsPlaying(true);
         startMonitoring();
       }
     }
-    // "retry" means learner can try again - modal will reappear with same question
   };
 
   const formatTime = (seconds: number) => {
@@ -178,81 +205,103 @@ export function VideoPlayerShell({ sessionId }: VideoPlayerShellProps) {
     );
   }
 
+  // Show completion view
+  if (completion) {
+    return (
+      <div className="space-y-6">
+        <SessionCompletion
+          finalScore={completion.final_score}
+          durationSeconds={completion.duration_seconds}
+          interventionsTriggered={completion.interventions_triggered}
+          interventionsPassed={completion.interventions_passed}
+        />
+        <SessionTimelineShell sessionId={sessionId} />
+      </div>
+    );
+  }
+
   return (
-    <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 space-y-4">
-      <div className="aspect-video rounded-xl bg-black overflow-hidden flex items-center justify-center">
-        <video
-          ref={videoRef}
-          src={video?.storage_url}
-          className="w-full h-full"
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleLoadedMetadata}
-          onPlay={handlePlay}
-          onPause={handlePause}
-        />
-      </div>
+    <div className="space-y-6">
+      <section className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6 space-y-4">
+        <div className="aspect-video rounded-xl bg-black overflow-hidden flex items-center justify-center">
+          <video
+            ref={videoRef}
+            src={videoUrl ?? undefined}
+            className="w-full h-full"
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleLoadedMetadata}
+            onPlay={handlePlay}
+            onPause={handlePause}
+            onEnded={handleVideoEnded}
+          />
+        </div>
 
-      <div className="space-y-3">
-        <h3 className="text-lg font-semibold text-white">{video?.title}</h3>
-        <p className="text-sm text-slate-400">{video?.description}</p>
+        <div className="space-y-3">
+          <h3 className="text-lg font-semibold text-white">{videoTitle}</h3>
 
-        <div className="flex items-center gap-4">
-          <button
-            onClick={togglePlay}
-            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
-          >
-            {isPlaying ? "Pause" : "Play"}
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={togglePlay}
+              className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
+            >
+              {isPlaying ? "Pause" : "Play"}
+            </button>
 
-          <div className="flex-1">
-            <input
-              type="range"
-              min="0"
-              max={duration || 0}
-              value={currentTime}
-              onChange={(e) => {
-                const newTime = parseFloat(e.target.value);
-                setCurrentTime(newTime);
-                if (videoRef.current) {
-                  videoRef.current.currentTime = newTime;
-                }
-              }}
-              className="w-full"
-            />
+            <div className="flex-1">
+              <input
+                type="range"
+                min="0"
+                max={duration || 0}
+                value={currentTime}
+                onChange={(e) => {
+                  const newTime = parseFloat(e.target.value);
+                  setCurrentTime(newTime);
+                  if (videoRef.current) {
+                    videoRef.current.currentTime = newTime;
+                  }
+                }}
+                className="w-full"
+              />
+            </div>
+
+            <div className="text-sm text-slate-400 whitespace-nowrap">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </div>
           </div>
+        </div>
 
-          <div className="text-sm text-slate-400 whitespace-nowrap">
-            {formatTime(currentTime)} / {formatTime(duration)}
+        <div className="grid gap-3 md:grid-cols-3 mt-4">
+          <div className="rounded-xl border border-slate-800 p-4 text-sm text-slate-300">
+            <span className="font-medium text-white">Session ID:</span>{" "}
+            {sessionId.slice(0, 8)}...
+          </div>
+          <div className="rounded-xl border border-slate-800 p-4 text-sm text-slate-300">
+            <span className="font-medium text-white">Status:</span>{" "}
+            {session?.status}
+          </div>
+          <div className="rounded-xl border border-slate-800 p-4 text-sm text-slate-300">
+            <span className="font-medium text-white">Duration:</span>{" "}
+            {Math.floor(duration / 60)}m
           </div>
         </div>
-      </div>
 
-      <div className="grid gap-3 md:grid-cols-3 mt-4">
-        <div className="rounded-xl border border-slate-800 p-4 text-sm text-slate-300">
-          <span className="font-medium text-white">Session ID:</span> {sessionId.slice(0, 8)}...
-        </div>
-        <div className="rounded-xl border border-slate-800 p-4 text-sm text-slate-300">
-          <span className="font-medium text-white">Status:</span> {session?.status}
-        </div>
-        <div className="rounded-xl border border-slate-800 p-4 text-sm text-slate-300">
-          <span className="font-medium text-white">Duration:</span> {Math.floor(duration / 60)}m
-        </div>
-      </div>
+        {cameraError && (
+          <div className="text-xs text-amber-400 mt-1">
+            Camera unavailable — face detection disabled
+          </div>
+        )}
 
-      {cameraError && (
-        <div className="text-xs text-amber-400 mt-1">
-          Camera unavailable — face detection disabled
-        </div>
-      )}
+        {showInterventionModal && activeIntervention && (
+          <InterventionModal
+            open={showInterventionModal}
+            sessionId={sessionId}
+            intervention={activeIntervention}
+            onClose={handleModalClose}
+          />
+        )}
+      </section>
 
-      {showInterventionModal && activeIntervention && (
-        <InterventionModal
-          open={showInterventionModal}
-          sessionId={sessionId}
-          intervention={activeIntervention}
-          onClose={handleModalClose}
-        />
-      )}
-    </section>
+      <SessionTimelineShell sessionId={sessionId} isActive={isPlaying} />
+    </div>
   );
 }

@@ -2,11 +2,14 @@ from datetime import datetime
 from uuid import uuid4
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_db, get_current_user
-from app.models import Assignment, Course, CourseVideo, TrainingSession, VideoAsset, User
+from app.models import (
+    Assignment, AttentionEvent, Course, CourseVideo,
+    Intervention, TrainingSession, VideoAsset, User,
+)
 from app.schemas.assignment import (
     AssignmentsListResponse,
     AssignmentResponse,
@@ -21,19 +24,85 @@ from app.schemas.session import (
     StartSessionRequest,
     AttentionEventResponse,
     AnswerEvaluationResponse,
+    LearnerDashboardResponse,
+    SessionCompletionResponse,
+    SessionTimelineResponse,
+    TimelineEvent,
 )
+from app.services.attention_service import AttentionMonitoringService
 from app.services.session_orchestrator import SessionOrchestratorService
-from app.utils.enums import SessionStatus
+from app.utils.enums import AssignmentStatus, InterventionStatus, SessionStatus
 
 router = APIRouter(tags=["learner"])
 
+
+# ── Dashboard ────────────────────────────────────────────────────────────────
+
+@router.get("/dashboard", response_model=LearnerDashboardResponse)
+async def get_dashboard(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> LearnerDashboardResponse:
+    assignments = (
+        db.query(Assignment)
+        .filter(Assignment.user_id == current_user.id)
+        .all()
+    )
+
+    total = len(assignments)
+    completed = sum(1 for a in assignments if a.status == AssignmentStatus.COMPLETED)
+    in_progress = sum(1 for a in assignments if a.status == AssignmentStatus.IN_PROGRESS)
+
+    # Average attention score across completed sessions
+    completed_sessions = (
+        db.query(TrainingSession)
+        .filter(
+            TrainingSession.user_id == current_user.id,
+            TrainingSession.status == SessionStatus.COMPLETED,
+        )
+        .all()
+    )
+
+    avg_score = None
+    if completed_sessions:
+        scores = []
+        for s in completed_sessions:
+            score = await AttentionMonitoringService.calculate_score(s.id, db)
+            scores.append(score)
+        avg_score = round(sum(scores) / len(scores), 1) if scores else None
+
+    # Intervention stats
+    user_session_ids = [s.id for s in completed_sessions]
+    total_interventions = 0
+    passed_interventions = 0
+    if user_session_ids:
+        interventions = (
+            db.query(Intervention)
+            .filter(Intervention.session_id.in_(user_session_ids))
+            .all()
+        )
+        total_interventions = len(interventions)
+        passed_interventions = sum(
+            1 for i in interventions if i.status == InterventionStatus.PASSED
+        )
+
+    return LearnerDashboardResponse(
+        total_assignments=total,
+        completed_assignments=completed,
+        in_progress_assignments=in_progress,
+        avg_attention_score=avg_score,
+        total_interventions=total_interventions,
+        passed_interventions=passed_interventions,
+    )
+
+
+# ── Assignments ──────────────────────────────────────────────────────────────
 
 @router.get("/assignments", response_model=AssignmentsListResponse)
 async def list_assignments(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> AssignmentsListResponse:
-    # Query all assignments for the current user
     assignments = (
         db.query(Assignment)
         .filter(Assignment.user_id == current_user.id)
@@ -42,12 +111,10 @@ async def list_assignments(
 
     assignments_response = []
     for assignment in assignments:
-        # Get the course
         course = db.query(Course).filter(Course.id == assignment.course_id).first()
         if not course:
             continue
 
-        # Get all videos for this course
         course_videos = (
             db.query(CourseVideo)
             .filter(CourseVideo.course_id == course.id)
@@ -80,6 +147,14 @@ async def list_assignments(
             videos=videos,
         )
 
+        # B4: Get last session for this assignment
+        last_session = (
+            db.query(TrainingSession)
+            .filter(TrainingSession.assignment_id == assignment.id)
+            .order_by(TrainingSession.started_at.desc())
+            .first()
+        )
+
         assignments_response.append(
             AssignmentResponse(
                 id=assignment.id,
@@ -88,11 +163,20 @@ async def list_assignments(
                 due_at=assignment.due_at,
                 assigned_at=assignment.assigned_at,
                 completed_at=assignment.completed_at,
+                last_session_id=last_session.id if last_session else None,
+                last_session_status=last_session.status if last_session else None,
+                last_session_at=(
+                    last_session.started_at.isoformat()
+                    if last_session and last_session.started_at
+                    else None
+                ),
             )
         )
 
     return AssignmentsListResponse(assignments=assignments_response)
 
+
+# ── Sessions ─────────────────────────────────────────────────────────────────
 
 @router.post("/sessions/start", response_model=SessionResponse)
 async def start_session(
@@ -100,7 +184,6 @@ async def start_session(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> SessionResponse:
-    # Verify the assignment exists and belongs to the user
     assignment = (
         db.query(Assignment)
         .filter(
@@ -116,7 +199,6 @@ async def start_session(
             detail="Assignment not found",
         )
 
-    # Verify the video asset exists
     video = db.query(VideoAsset).filter(VideoAsset.id == payload.video_asset_id).first()
     if not video:
         raise HTTPException(
@@ -124,7 +206,6 @@ async def start_session(
             detail="Video asset not found",
         )
 
-    # Create a new session
     session_id = str(uuid4())
     session = TrainingSession(
         id=session_id,
@@ -171,7 +252,6 @@ async def get_session(
             detail="Session not found",
         )
 
-    # Fetch video details
     video = (
         db.query(VideoAsset)
         .filter(VideoAsset.id == session.video_asset_id)
@@ -232,11 +312,13 @@ async def answer_intervention(
     )
 
 
-@router.post("/sessions/{session_id}/complete", response_model=SessionResponse)
+# ── Session completion (B2: enhanced response) ──────────────────────────────
+
+@router.post("/sessions/{session_id}/complete", response_model=SessionCompletionResponse)
 async def complete_session(
     session_id: str,
     db: Session = Depends(get_db),
-) -> SessionResponse:
+) -> SessionCompletionResponse:
     session = (
         db.query(TrainingSession)
         .filter(TrainingSession.id == session_id)
@@ -250,10 +332,35 @@ async def complete_session(
 
     session.status = SessionStatus.COMPLETED
     session.ended_at = datetime.utcnow()
+
+    # Calculate final stats
+    final_score = await AttentionMonitoringService.calculate_score(session_id, db)
+    session.final_score = final_score
+
+    total_events = (
+        db.query(AttentionEvent)
+        .filter(AttentionEvent.session_id == session_id)
+        .count()
+    )
+
+    interventions = (
+        db.query(Intervention)
+        .filter(Intervention.session_id == session_id)
+        .all()
+    )
+    interventions_triggered = len(interventions)
+    interventions_passed = sum(
+        1 for i in interventions if i.status == InterventionStatus.PASSED
+    )
+
+    duration_seconds = 0.0
+    if session.started_at and session.ended_at:
+        duration_seconds = (session.ended_at - session.started_at).total_seconds()
+
     db.commit()
     db.refresh(session)
 
-    return SessionResponse(
+    session_resp = SessionResponse(
         id=session.id,
         assignment_id=session.assignment_id,
         video_asset_id=session.video_asset_id,
@@ -262,3 +369,78 @@ async def complete_session(
         ended_at=session.ended_at.isoformat() if session.ended_at else None,
     )
 
+    return SessionCompletionResponse(
+        session=session_resp,
+        final_score=final_score,
+        total_events=total_events,
+        interventions_triggered=interventions_triggered,
+        interventions_passed=interventions_passed,
+        duration_seconds=duration_seconds,
+    )
+
+
+# ── Session timeline (B3) ───────────────────────────────────────────────────
+
+@router.get("/sessions/{session_id}/timeline", response_model=SessionTimelineResponse)
+async def get_session_timeline(
+    session_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> SessionTimelineResponse:
+    session = (
+        db.query(TrainingSession)
+        .filter(
+            TrainingSession.id == session_id,
+            TrainingSession.user_id == current_user.id,
+        )
+        .first()
+    )
+    if not session:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found",
+        )
+
+    # Gather attention events
+    attention_events = (
+        db.query(AttentionEvent)
+        .filter(AttentionEvent.session_id == session_id)
+        .all()
+    )
+
+    # Gather interventions
+    interventions = (
+        db.query(Intervention)
+        .filter(Intervention.session_id == session_id)
+        .all()
+    )
+
+    events: list[TimelineEvent] = []
+
+    for ae in attention_events:
+        events.append(TimelineEvent(
+            type="attention",
+            timestamp=ae.timestamp,
+            event_type=ae.event_type,
+        ))
+
+    for iv in interventions:
+        question_text = None
+        q = iv.question_json
+        if isinstance(q, dict):
+            question_text = q.get("question", q.get("text"))
+        events.append(TimelineEvent(
+            type="intervention",
+            timestamp=iv.trigger_timestamp,
+            intervention_status=iv.status,
+            question_text=question_text,
+            score=iv.attention_score,
+        ))
+
+    # Sort by timestamp
+    events.sort(key=lambda e: e.timestamp)
+
+    return SessionTimelineResponse(
+        session_id=session_id,
+        events=events,
+    )

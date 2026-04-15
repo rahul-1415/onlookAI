@@ -26,6 +26,9 @@ class AssignmentResponse(BaseModel):
     due_at: datetime | None
     assigned_at: datetime | None
     completed_at: datetime | None
+    last_session_id: str | None = None
+    last_session_status: str | None = None
+    last_session_at: str | None = None
 
 
 class AssignmentsListResponse(BaseModel):

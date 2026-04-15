@@ -45,3 +45,35 @@ class AnswerEvaluationResponse(BaseModel):
     feedback: str
     next_action: str
     intervention_status: str
+
+
+class LearnerDashboardResponse(BaseModel):
+    total_assignments: int
+    completed_assignments: int
+    in_progress_assignments: int
+    avg_attention_score: float | None
+    total_interventions: int
+    passed_interventions: int
+
+
+class SessionCompletionResponse(BaseModel):
+    session: SessionResponse
+    final_score: float
+    total_events: int
+    interventions_triggered: int
+    interventions_passed: int
+    duration_seconds: float
+
+
+class TimelineEvent(BaseModel):
+    type: str  # "attention" or "intervention"
+    timestamp: str
+    event_type: str | None = None
+    score: float | None = None
+    intervention_status: str | None = None
+    question_text: str | None = None
+
+
+class SessionTimelineResponse(BaseModel):
+    session_id: str
+    events: list[TimelineEvent]
